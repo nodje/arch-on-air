@@ -16,7 +16,7 @@
       items:
         - vconsole.conf
         - systemd/
-        - modprobe.d/
+        #- modprobe.d/
         - X11/xorg.conf.d/
       become: true
 
@@ -90,8 +90,9 @@
         - webkit2gtk
         - mupdf
         - chromium
+        - firefox
         - wireshark-gtk
       become: true
 
-    - name: configure the audio
-      import_tasks: tasks/audio.yml
+    #- name: configure the audio
+    #  import_tasks: tasks/audio.yml
