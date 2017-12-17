@@ -6,6 +6,16 @@
     travis_ci: false
   gather_facts: false
   tasks:
+    - name: install python2/3 as a start
+      pacman: name={{ item }} state=present force=true update_cache=true
+      items:
+        - python
+        - python-pip
+        - python2
+        - python2-pip
+        - python2-six
+      become: true
+
     - name: copy files under /etc
       copy:
         src: "files/etc/{{ item }}"
@@ -18,16 +28,6 @@
         - systemd/
         #- modprobe.d/
         - X11/xorg.conf.d/
-      become: true
-
-    - name: install python2/3 as a start
-      pacman: name={{ item }} state=present force=true update_cache=true
-      items:
-        - python
-        - python-pip
-        - python2
-        - python2-pip
-        - python2-six
       become: true
 
     - name: install console apps
