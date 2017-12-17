@@ -10,6 +10,7 @@
       raw: pacman -S python --noconfirm
       args:
         executable: /bin/bash
+      become: true
 
     - name: copy files under /etc
       copy:
