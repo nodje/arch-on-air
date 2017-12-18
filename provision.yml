@@ -26,6 +26,11 @@
         - X11/xorg.conf.d/
       become: true
 
+    - name: install HiDPI related fonts
+      pacman: name={{ item }} state=present force=true update_cache=true
+      items:
+        - terminus-font
+
     - name: install python2/3 as a start
       pacman: name={{ item }} state=present force=true update_cache=true
       items:

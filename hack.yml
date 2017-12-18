@@ -14,9 +14,10 @@
     - name: install developer tools
       pacman: name={{ item }} state=present force=true update_cache=false
       items:
-        - bc
+        - atom
+        #- bc
         - gcc
-        - gcc-fortran
+        #- gcc-fortran
         - gdb
         - go
         - git
