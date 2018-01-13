@@ -6,10 +6,12 @@
     travis_ci: false
   gather_facts: false
   tasks:
+    #- name: first upgrade the system
     - name: Install Python using a raw SSH command to enable the execution of Ansible modules
       raw: pacman -S python --noconfirm
       args:
         executable: /bin/bash
+      changed_when: false
       become: true
 
     - name: copy files under /etc
@@ -30,9 +32,59 @@
       pacman: name={{ item }} state=present force=true update_cache=true
       items:
         - terminus-font
+        - adobe-source-code-pro-fonts
+      become: true
+    
+    - name: install wm stuff
+      pacman: name={{ item }} state=present force=true update_cache=false
+      items:
+        #- lightdm
+        #- lighdm-gtk-greeter
+        - avahi
+        - qt4 #for vlc
+        - vlc
+        - syncthing
+        - xclip #utility to cli copy to clipboard
+      become: true
+
+      #- name: modify lightdm conf
+      # 
+        #greeter-session=lightdm-gtk-greeter
+        #systemctl enable lightdm.service
+        
+    - name: install bonjour and macos network .local name recognition
+      pacman: name={{ item }} state=present force=true update_cache=false
+      items:
+        - avahi
+        - nss-mdns
+    - name: configure /etc/nssswitch.conf
+      lineinfile:
+        path: /etc/nsswitch.conf
+        regexp: '^hosts: '
+        line: 'hosts: files mymachines mdns_minimal [NOTFOUND=return] resolve [!UNAVAIL=return] dns myhostname'
+    - name: ensure avahi-daemon.service is enabled and started
+      systemd:
+        name: avahi-daemon.service
+        state: started
+        enabled: true
+      become: true
+
+    - name: install samba and configure
+      pacman: name={{ item }} state=present force=true update_cache=false
+      items:
+        - samba
+      become: true
+     #- name: install and configure Suckless st, dmenu, dwm
+    #- name: modify st font and font size
+    #- name: reconfigure systemd-journald.service to add /var hook problem solver 
+    #   template: override.conf
+    #   dest:  /etc/systemd/system/systemd-journald.service.d/override.conf
+    #-name: modify virtual console font and font size
+    # -name: download browser plugin and place them in the right config folder.
+    # -name: configure ajust screen brightness buttons
 
     - name: install python2/3 as a start
-      pacman: name={{ item }} state=present force=true update_cache=true
+      pacman: name={{ item }} state=present force=true update_cache=false
       items:
         - python
         - python-pip
@@ -45,6 +97,7 @@
       pacman: name={{ item }} state=present force=true update_cache=false
       items:
         - vim
+        - emacs
         - tmux
         - tree
         - jq
