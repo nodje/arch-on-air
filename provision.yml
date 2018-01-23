@@ -63,7 +63,8 @@
         - avahi
         - nss-mdns
         - networkmanager
-        - ifplugd #to be able to detect and automount connection
+        - ifplugd #to be able to detect and automount wired connections
+        - wpa_actiond #to auto mount wireless connections
       become: true
     
     - name: configure /etc/nssswitch.conf
@@ -76,6 +77,13 @@
         name: avahi-daemon.service
         state: started
         enabled: true
+      become: true
+
+    - name: ensure /etc/avahi/services is created to avoid boot msg error
+      file:
+        path: /etc/avahi/services
+        state: directory
+        mode: 0755
       become: true
 
     - name: ensure netctl-ifplugd@ens9.service is enabled and started

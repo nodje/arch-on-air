@@ -1,0 +1,7 @@
+Description='Automatically generated profile by wifi-menu'
+Interface=wlp3s0
+Connection=wireless
+Security=wpa
+ESSID=ledrurollin
+IP=dhcp
+Key=\"96f5799a9046f58a2e83661ff8fb561376737c9dafd999e4ba30952785b41cb6
