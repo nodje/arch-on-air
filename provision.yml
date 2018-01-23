@@ -6,7 +6,6 @@
     travis_ci: false
   gather_facts: false
   tasks:
-    #- name: first upgrade the system
     - name: Install Python using a raw SSH command to enable the execution of Ansible modules
       raw: pacman -S python --noconfirm
       args:
@@ -14,6 +13,12 @@
       changed_when: false
       become: true
 
+    - name: first upgrade the system
+      pacman:
+        update_cache: yes
+        upgrade: yes
+      become: true
+    
     - name: copy files under /etc
       copy:
         src: "files/etc/{{ item }}"
@@ -29,14 +34,14 @@
       become: true
 
     - name: install HiDPI related fonts
-      pacman: name={{ item }} state=present force=true update_cache=true
+      pacman: name={{ item }} state=present force=true
       items:
         - terminus-font
         - adobe-source-code-pro-fonts
       become: true
     
     - name: install wm stuff
-      pacman: name={{ item }} state=present force=true update_cache=false
+      pacman: name={{ item }} state=present force=true
       items:
         #- lightdm
         #- lighdm-gtk-greeter
@@ -52,11 +57,15 @@
         #greeter-session=lightdm-gtk-greeter
         #systemctl enable lightdm.service
         
-    - name: install bonjour and macos network .local name recognition
-      pacman: name={{ item }} state=present force=true update_cache=false
+    - name: install networkmanager, bonjour and macos network .local name recognition
+      pacman: name={{ item }} state=present force=true
       items:
         - avahi
         - nss-mdns
+        - networkmanager
+        - ifplugd #to be able to detect and automount connection
+      become: true
+    
     - name: configure /etc/nssswitch.conf
       lineinfile:
         path: /etc/nsswitch.conf
@@ -69,22 +78,34 @@
         enabled: true
       become: true
 
+    - name: ensure netctl-ifplugd@ens9.service is enabled and started
+      systemd:
+        name: netctl-ifplugd@ens9.service
+        state: started
+        enabled: true
+      become: true
+    
+    - name: ensure netctl-auto@wlp3s0.service is enabled and started
+      systemd:
+        name: netctl-auto@wlp3s0.service
+        state: started
+        enabled: true
+      become: true
+    
     - name: install samba and configure
-      pacman: name={{ item }} state=present force=true update_cache=false
+      pacman: name={{ item }} state=present force=true
       items:
+        - samba-client
         - samba
       become: true
      #- name: install and configure Suckless st, dmenu, dwm
     #- name: modify st font and font size
-    #- name: reconfigure systemd-journald.service to add /var hook problem solver 
-    #   template: override.conf
-    #   dest:  /etc/systemd/system/systemd-journald.service.d/override.conf
     #-name: modify virtual console font and font size
     # -name: download browser plugin and place them in the right config folder.
     # -name: configure ajust screen brightness buttons
 
     - name: install python2/3 as a start
-      pacman: name={{ item }} state=present force=true update_cache=false
+      pacman: name={{ item }} state=present force=true
       items:
         - python
         - python-pip
@@ -94,7 +115,7 @@
       become: true
 
     - name: install console apps
-      pacman: name={{ item }} state=present force=true update_cache=false
+      pacman: name={{ item }} state=present force=true
       items:
         - vim
         - emacs
@@ -113,7 +134,7 @@
       become: true
 
     - name: install network tools
-      pacman: name={{ item }} state=present force=true update_cache=false
+      pacman: name={{ item }} state=present force=true
       items:
         - w3m
         - elinks
@@ -128,14 +149,17 @@
         - rsync
         - irssi
         - mutt
+        - cyrus-sasl
         - ebtables
         - dnsmasq
         - openconnect
         - wpa_supplicant
       become: true
+    - name: configure mutt for gmail account
+      template: 
 
     - name: install graphical libraries & tools
-      pacman: name={{ item }} state=present force=true update_cache=true
+      pacman: name={{ item }} state=present force=true
       items:
         - gcr
         - libxft
