@@ -18,6 +18,8 @@
         update_cache: yes
         upgrade: yes
       become: true
+      register: packages
+    - debug: var=packages
     
     - name: copy files under /etc
       copy:
@@ -34,14 +36,14 @@
       become: true
 
     - name: install HiDPI related fonts
-      pacman: name={{ item }} state=present force=true
+      pacman: name={{ item }} state=latest
       items:
         - terminus-font
         - adobe-source-code-pro-fonts
       become: true
     
     - name: install wm stuff
-      pacman: name={{ item }} state=present force=true
+      pacman: name={{ item }} state=latest
       items:
         #- lightdm
         #- lighdm-gtk-greeter
@@ -58,7 +60,7 @@
         #systemctl enable lightdm.service
         
     - name: install networkmanager, bonjour and macos network .local name recognition
-      pacman: name={{ item }} state=present force=true
+      pacman: name={{ item }} state=latest
       items:
         - avahi
         - nss-mdns
@@ -101,9 +103,8 @@
       become: true
     
     - name: install samba and configure
-      pacman: name={{ item }} state=present force=true
+      pacman: name={{ item }} state=latest
       items:
-        - samba-client
         - samba
       become: true
      #- name: install and configure Suckless st, dmenu, dwm
@@ -113,7 +114,7 @@
     # -name: configure ajust screen brightness buttons
 
     - name: install python2/3 as a start
-      pacman: name={{ item }} state=present force=true
+      pacman: name={{ item }} state=latest
       items:
         - python
         - python-pip
@@ -123,7 +124,7 @@
       become: true
 
     - name: install console apps
-      pacman: name={{ item }} state=present force=true
+      pacman: name={{ item }} state=latest
       items:
         - vim
         - emacs
@@ -142,7 +143,7 @@
       become: true
 
     - name: install network tools
-      pacman: name={{ item }} state=present force=true
+      pacman: name={{ item }} state=latest
       items:
         - w3m
         - elinks
@@ -163,15 +164,19 @@
         - openconnect
         - wpa_supplicant
       become: true
-    - name: configure mutt for gmail account
-      template: 
+    
+    #- name: configure mutt for gmail account
+    #  template: 
 
     - name: install graphical libraries & tools
-      pacman: name={{ item }} state=present force=true
+      pacman: name={{ item }} state=latest
       items:
         - gcr
+        # lib needed to compile dwm
         - libxft
         - libxinerama
+        - pkg-config
+        # end
         - xf86-video-intel
         - xf86-input-libinput
         - xf86-input-synaptics
@@ -188,6 +193,58 @@
         - chromium
         - firefox
         - wireshark-gtk
+      become: true
+    
+    - name: checkout & make suckless dwm
+      git:
+        repo: 'http://git.suckless.org/dwm'
+        dest: /home/jean/dwm
+
+    - name: checkout & make suckless st
+      git:
+        repo: 'http://git.suckless.org/st'
+        dest: /home/jean/st
+
+    - name: checkout & make suckless dmenu
+      git:
+        repo: 'http://git.suckless.org/dmenu'
+        dest: /home/jean/dmenu
+    
+    - name: copy st default config.def.h config.h     
+      copy:
+        src: /home/jean/st/config.def.h
+        dest: /home/jean/st/config.h
+    - name: configure st/config.h
+      lineinfile:
+        path: /home/jean/st/config.h
+        regexp: '^char font'
+        line: 'char font[] = "Source Code Pro:style=Semibold:size=8";'
+
+    - name: make st
+      make:
+        chdir: /home/jean/st
+    - name: make install st
+      make:
+        chdir: /home/jean/st
+        target: install
+      become: true
+
+    - name: make dwm
+      make:
+        chdir: /home/jean/dwm
+    - name: make install dwm
+      make:
+        chdir: /home/jean/dwm
+        target: install
+      become: true
+
+    - name: make dmenu
+      make:
+        chdir: /home/jean/dmenu
+    - name: make install dmenu
+      make:
+        chdir: /home/jean/dmenu
+        target: install
       become: true
 
     #- name: configure the audio
