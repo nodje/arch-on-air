@@ -4,6 +4,8 @@
   connection: local
   vars:
     travis_ci: false
+    ishidpi: false
+    sucklessdir: "~/suckless"
   gather_facts: false
   tasks:
     - name: Install Python using a raw SSH command to enable the execution of Ansible modules
@@ -34,12 +36,19 @@
         #- modprobe.d/
         - X11/xorg.conf.d/
       become: true
+    - name: change console font when HiDPI
+      lineinfile:
+        line: "FONT=ter-132n"
+        path: /etc/vconsole.conf
+      when: ishidpi
+      become: true
 
     - name: install HiDPI related fonts
       pacman: name={{ item }} state=latest
       items:
         - terminus-font
         - adobe-source-code-pro-fonts
+      when: ishidpi
       become: true
     
     - name: install wm stuff
@@ -68,12 +77,13 @@
         - ifplugd #to be able to detect and automount wired connections
         - wpa_actiond #to auto mount wireless connections
       become: true
-    
+
     - name: configure /etc/nssswitch.conf
       lineinfile:
         path: /etc/nsswitch.conf
         regexp: '^hosts: '
         line: 'hosts: files mymachines mdns_minimal [NOTFOUND=return] resolve [!UNAVAIL=return] dns myhostname'
+      become: true
     - name: ensure avahi-daemon.service is enabled and started
       systemd:
         name: avahi-daemon.service
@@ -94,6 +104,7 @@
         state: started
         enabled: true
       become: true
+      ignore_errors: true 
     
     - name: ensure netctl-auto@wlp3s0.service is enabled and started
       systemd:
@@ -101,6 +112,7 @@
         state: started
         enabled: true
       become: true
+      ignore_errors: true 
     
     - name: install samba and configure
       pacman: name={{ item }} state=latest
@@ -194,58 +206,80 @@
         - firefox
         - wireshark-gtk
       become: true
-    
+
+    - name: create dir for suckles tools git cloning
+      file:
+        state: directory
+        path: "{{ sucklessdir }}"
     - name: checkout & make suckless dwm
       git:
         repo: 'http://git.suckless.org/dwm'
-        dest: /home/jean/dwm
+        dest: "{{ sucklessdir }}/dwm"
 
     - name: checkout & make suckless st
       git:
         repo: 'http://git.suckless.org/st'
-        dest: /home/jean/st
-
+        dest: "{{ sucklessdir }}/st"
+    # - name: download and apply patches
+      
     - name: checkout & make suckless dmenu
       git:
         repo: 'http://git.suckless.org/dmenu'
-        dest: /home/jean/dmenu
+        dest: "{{ sucklessdir }}/dmenu"
     
+    - name: checkout & make suckless surf
+      git:
+        repo: 'http://git.suckless.org/surf'
+        dest: "{{ sucklessdir }}/surf"
+
     - name: copy st default config.def.h config.h     
       copy:
-        src: /home/jean/st/config.def.h
-        dest: /home/jean/st/config.h
+        src: "{{ sucklessdir }}/st/config.def.h"
+        dest: "{{ sucklessdir }}/st/config.h"
     - name: configure st/config.h
       lineinfile:
-        path: /home/jean/st/config.h
+        path: "{{ sucklessdir }}/st/config.h"
         regexp: '^char font'
         line: 'char font[] = "Source Code Pro:style=Semibold:size=8";'
 
     - name: make st
       make:
-        chdir: /home/jean/st
+        chdir: "{{ sucklessdir }}/st"
+      register: result
     - name: make install st
       make:
-        chdir: /home/jean/st
+        chdir: "{{ result.chdir }}"
         target: install
       become: true
 
     - name: make dwm
       make:
-        chdir: /home/jean/dwm
+        chdir: "{{ sucklessdir }}/dwm"
+      register: result
     - name: make install dwm
       make:
-        chdir: /home/jean/dwm
+        chdir: "{{ result.chdir }}"
         target: install
       become: true
 
     - name: make dmenu
       make:
-        chdir: /home/jean/dmenu
+        chdir: "{{ sucklessdir }}/dmenu"
+      register: result
     - name: make install dmenu
       make:
-        chdir: /home/jean/dmenu
+        chdir: "{{ result.chdir }}"
         target: install
       become: true
 
+    - name: make surf
+      make:
+        chdir: "{{ sucklessdir }}/surf"
+      register: result
+    - name: make install surf
+      make:
+        chdir: "{{ result.chdir }}"
+        target: install
+      become: true
     #- name: configure the audio
     #  import_tasks: tasks/audio.yml

@@ -1,0 +1,28 @@
+---
+# install a suckless package
+- name: checkout & make
+  git:
+    repo: 'http://git.suckless.org/{{ sucklesspkg }}'
+    dest: "{{ sucklessdir }}/{{ sucklesspkg }}"
+
+- name: copy {{ sucklesspkg }} default config.def.h config.h     
+  copy:
+    src: "{{ sucklessdir }}/{{ sucklesspkg }}/config.def.h"
+    dest: "{{ sucklessdir }}/{{ sucklesspkg }}/config.h"
+
+    #- name: configure {{ sucklesspkg }}/config.h
+    #  lineinfile:
+    #    path: "{{ sucklessdir }}/{{ sucklesspkg }}/config.h"
+    #    regexp: '^char font'
+    #    line: 'char font[] = "Source Code Pro:style=Semibold:size=8";'
+
+- name: make {{ sucklesspkg }}
+  make:
+    chdir: "{{ sucklessdir }}/{{ sucklesspkg }}"
+    register: result
+
+- name: make install {{ sucklesspkg }}
+  make:
+    chdir: "{{ result.chdir }}"
+    target: install
+  become: true
