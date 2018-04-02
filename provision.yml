@@ -1,19 +1,19 @@
 ---
 - name: arch-on-air post-installation playbook
   hosts: host
-  connection: local
   vars:
     travis_ci: false
-    ishidpi: false
     sucklessdir: "~/suckless"
-  gather_facts: false
+  gather_facts: true
   tasks:
-    - name: Install Python using a raw SSH command to enable the execution of Ansible modules
-      raw: pacman -S python --noconfirm
-      args:
-        executable: /bin/bash
-      changed_when: false
-      become: true
+    - debug: msg="Hurrah! we have wlan0 in ansible interfaces!" verbosity=1
+      when: '"wlan0" in ansible_interfaces'
+    # - name: Install Python using a raw SSH command to enable the execution of Ansible modules
+    #   raw: pacman -S python --noconfirm
+    #   args:
+    #     executable: /bin/bash
+    #   changed_when: false
+    #   become: true
 
     - name: first upgrade the system
       pacman:
@@ -22,7 +22,7 @@
       become: true
       register: packages
     - debug: var=packages
-    
+
     - name: copy files under /etc
       copy:
         src: "files/etc/{{ item }}"
@@ -30,10 +30,11 @@
         mode: 0644
         owner: root
         group: root
-      items:
+      with_items:
         - vconsole.conf
         - systemd/
         #- modprobe.d/
+        - wpa_supplicant/wpa_supplicant.conf
         - X11/xorg.conf.d/
       become: true
     - name: change console font when HiDPI
@@ -45,15 +46,15 @@
 
     - name: install HiDPI related fonts
       pacman: name={{ item }} state=latest
-      items:
+      with_items:
         - terminus-font
         - adobe-source-code-pro-fonts
       when: ishidpi
       become: true
-    
+
     - name: install wm stuff
       pacman: name={{ item }} state=latest
-      items:
+      with_items:
         #- lightdm
         #- lighdm-gtk-greeter
         - avahi
@@ -64,18 +65,24 @@
       become: true
 
       #- name: modify lightdm conf
-      # 
+      #
         #greeter-session=lightdm-gtk-greeter
         #systemctl enable lightdm.service
-        
+    - name: start enable systemd-networkd
+      service:
+        name: systemd-networkd
+        state: started
+        enabled: true
+
     - name: install networkmanager, bonjour and macos network .local name recognition
       pacman: name={{ item }} state=latest
-      items:
+      with_items:
         - avahi
         - nss-mdns
         - networkmanager
         - ifplugd #to be able to detect and automount wired connections
-        - wpa_actiond #to auto mount wireless connections
+        #- wpa_actiond #to auto mount wireless connections with netctl
+        - wpa_supplicant
       become: true
 
     - name: configure /etc/nssswitch.conf
@@ -98,25 +105,38 @@
         mode: 0755
       become: true
 
-    - name: ensure netctl-ifplugd@ens9.service is enabled and started
-      systemd:
-        name: netctl-ifplugd@ens9.service
+    - name: Revert to traditional network device names
+      file:
+        src: /dev/null
+        path: /etc/udev/rules.d/80-net-setup-link.rules
+        state: link
+
+    - name: start && enable service dhcpcd@wlan0
+      service:
+        name: dhcpcd@wlan0
         state: started
         enabled: true
-      become: true
-      ignore_errors: true 
-    
-    - name: ensure netctl-auto@wlp3s0.service is enabled and started
-      systemd:
-        name: netctl-auto@wlp3s0.service
-        state: started
-        enabled: true
-      become: true
-      ignore_errors: true 
-    
+      when: '"wlan0" in ansible_interfaces'
+
+    # - name: ensure netctl-ifplugd@eth0.service is enabled and started
+    #   systemd:
+    #     name: netctl-ifplugd@eth0.service
+    #     state: started
+    #     enabled: true
+    #   become: true
+    #   ignore_errors: true
+
+    # - name: ensure netctl-auto@wlan0.service is enabled and started
+    #   systemd:
+    #     name: netctl-auto@wlan0.service
+    #     state: started
+    #     enabled: true
+    #   become: true
+    #   ignore_errors: true
+
     - name: install samba and configure
       pacman: name={{ item }} state=latest
-      items:
+      with_items:
         - samba
       become: true
      #- name: install and configure Suckless st, dmenu, dwm
@@ -127,7 +147,7 @@
 
     - name: install python2/3 as a start
       pacman: name={{ item }} state=latest
-      items:
+      with_items:
         - python
         - python-pip
         - python2
@@ -137,7 +157,7 @@
 
     - name: install console apps
       pacman: name={{ item }} state=latest
-      items:
+      with_items:
         - vim
         - emacs
         - tmux
@@ -156,7 +176,7 @@
 
     - name: install network tools
       pacman: name={{ item }} state=latest
-      items:
+      with_items:
         - w3m
         - elinks
         - curl
@@ -174,15 +194,14 @@
         - ebtables
         - dnsmasq
         - openconnect
-        - wpa_supplicant
       become: true
-    
+
     #- name: configure mutt for gmail account
-    #  template: 
+    #  template:
 
     - name: install graphical libraries & tools
       pacman: name={{ item }} state=latest
-      items:
+      with_items:
         - gcr
         # lib needed to compile dwm
         - libxft
@@ -221,21 +240,17 @@
         repo: 'http://git.suckless.org/st'
         dest: "{{ sucklessdir }}/st"
     # - name: download and apply patches
-      
+
     - name: checkout & make suckless dmenu
       git:
         repo: 'http://git.suckless.org/dmenu'
         dest: "{{ sucklessdir }}/dmenu"
-    
+
     - name: checkout & make suckless surf
       git:
         repo: 'http://git.suckless.org/surf'
         dest: "{{ sucklessdir }}/surf"
 
-    - name: copy st default config.def.h config.h     
-      copy:
-        src: "{{ sucklessdir }}/st/config.def.h"
-        dest: "{{ sucklessdir }}/st/config.h"
     - name: configure st/config.h
       lineinfile:
         path: "{{ sucklessdir }}/st/config.h"
