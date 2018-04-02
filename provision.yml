@@ -34,7 +34,7 @@
         - vconsole.conf
         - systemd/
         #- modprobe.d/
-        - wpa_supplicant/wpa_supplicant.conf
+        - wpa_supplicant/
         - X11/xorg.conf.d/
       become: true
     - name: change console font when HiDPI
