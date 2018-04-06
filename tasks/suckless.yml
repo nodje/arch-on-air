@@ -1,0 +1,33 @@
+---
+- name: create dir for suckless tools git cloning
+  file:
+    state: directory
+    path: "{{ sucklessdir }}"
+
+- name: git clone suckless apps
+  git:
+    repo: "http://git.suckless.org/{{ item }}"
+    dest: "{{ sucklessdir }}/{{ item }}"
+    version: HEAD
+    update: yes
+    ssh_opts: "-o StrictHostKeyChecking=no"
+  with_items: "{{ suckless_items }}"
+
+# - name: download and apply patches
+
+- name: initial copy st default config.def.h config.h
+  copy:
+    src: "{{ sucklessdir }}/st/config.def.h"
+    dest: "{{ sucklessdir }}/st/config.h"
+    remote_src: yes
+    force: no
+
+- name: configure st/config.h
+  lineinfile:
+    path: "{{ sucklessdir }}/st/config.h"
+    regexp: '^static char \*font'
+    line: 'static char *font = "Source Code Pro:style=Semibold:size=8";'
+
+- name: make & make install
+  include: tasks/suckless/makeinstall.yml program={{ item }}
+  with_items: "{{ suckless_items }}"

@@ -1,3 +1,4 @@
 [host]
 #localhost ansible_connection=local ansible_python_interpreter=python
-xiaoarch.local ansible_user=root
+#xiaoarch.local ansible_user=root
+localarch

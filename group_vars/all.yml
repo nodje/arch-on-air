@@ -1,0 +1,8 @@
+---
+default_user: nodje
+ishidpi: false
+suckless_items:
+  - dwm
+  - dmenu
+  - st
+  - surf

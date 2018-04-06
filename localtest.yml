@@ -1,0 +1,10 @@
+- name: arch-on-air post-installation playbook
+  hosts: host
+  remote_user: "{{ default_user }}"
+  vars:
+    travis_ci: false
+    sucklessdir: "/home/{{ default_user }}/suckless"
+  gather_facts: true
+  tasks:
+    - name: let's suckless!
+      import_tasks: tasks/suckless.yml

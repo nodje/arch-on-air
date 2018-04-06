@@ -1,0 +1,15 @@
+---
+  - name: build suckless X apps
+    make:
+      chdir: "{{ sucklessdir }}/{{ program }}"
+      target: "{{ program }}"
+    #with_items: "{{ suckless_items }}"
+    register: result
+
+  - name: install suckless X apps
+    make:
+      chdir: "{{ sucklessdir }}/{{ program }}"
+      target: install
+    #with_items: "{{ suckless_items }}"
+    when: result is changed
+    become: true

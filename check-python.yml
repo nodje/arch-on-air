@@ -1,0 +1,22 @@
+---
+- hosts: all
+  gather_facts: no
+  remote_user: root
+
+  tasks:
+    - name: is python installed?
+      ping:
+      register: result
+      ignore_errors: true
+    - debug: var=result
+    - name: Install Python using a raw SSH command to enable the execution of Ansible modules
+      raw: pacman -S python --noconfirm
+      args:
+        executable: /bin/bash
+      changed_when: false
+      when: result is failed
+      #when: '"python: No such file or directory" in result'
+    - name: install basics
+      pacman: name={{ item }} state=latest
+      with_items:
+        - sudo
