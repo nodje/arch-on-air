@@ -118,6 +118,19 @@
         enabled: true
       when: '"wlan0" in ansible_interfaces'
 
+    - name: start && enable service dhcpcd@eth0
+      service:
+        name: dhcpcd@eth0
+        state: started
+        enabled: true
+      when: '"eth0" in ansible_interfaces'
+
+    - name: start && enable service dhcpcd@eth1
+      service:
+        name: dhcpcd@eth1
+        state: started
+        enabled: true
+      when: '"eth1" in ansible_interfaces'
     # - name: ensure netctl-ifplugd@eth0.service is enabled and started
     #   systemd:
     #     name: netctl-ifplugd@eth0.service
