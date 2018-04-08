@@ -3,6 +3,7 @@
   import_playbook: check-python.yml
 - name: set the user and the group to get a pwd less sudo user
   import_playbook: passwordless-sudo-setup.yml
+#- name: how to reboot or activate network interface change? cf. https://wiki.archlinux.org/index.php/udev#Loading_new_rules
 - name: arch-on-air post-installation playbook
   hosts: host
   remote_user: "{{ default_user }}"
@@ -13,6 +14,50 @@
   tasks:
     - debug: msg="Hurrah! we have wlan0 in ansible interfaces!" verbosity=1
       when: '"wlan0" in ansible_interfaces'
+
+    - name: Revert to traditional network device names
+      file:
+        src: /dev/null
+        path: /etc/udev/rules.d/80-net-setup-link.rules
+        state: link
+
+    - name: start enable network services
+      include: tasks/enablestartservice.yml service={{ item }}
+      with_items:
+        - wpa_supplicant@wlan0.conf
+        - systemd-networkd
+
+    - name: start && enable service dhcpcd@wlan0
+      service:
+        name: dhcpcd@wlan0
+        state: started
+        enabled: true
+      when: '"wlan0" in ansible_interfaces'
+
+    - name: start && enable service dhcpcd@eth0
+      service:
+        name: dhcpcd@eth0
+        state: started
+        enabled: true
+      when: '"eth0" in ansible_interfaces'
+
+    - name: start && enable service dhcpcd@eth1
+      service:
+        name: dhcpcd@eth1
+        state: started
+        enabled: true
+      when: '"eth1" in ansible_interfaces'
+
+    - name: install networkmanager, bonjour and macos network .local name recognition
+      pacman: name={{ item }} state=latest
+      with_items:
+        - avahi
+        - nss-mdns
+        #- networkmanager
+        - ifplugd #to be able to detect and automount wired connections
+        #- wpa_actiond #to auto mount wireless connections with netctl
+        - wpa_supplicant
+      become: true
 
     - name: first upgrade the system
       pacman:
@@ -63,27 +108,6 @@
         - xclip #utility to cli copy to clipboard
       become: true
 
-      #- name: modify lightdm conf
-      #
-        #greeter-session=lightdm-gtk-greeter
-        #systemctl enable lightdm.service
-    - name: start enable systemd-networkd
-      service:
-        name: systemd-networkd
-        state: started
-        enabled: true
-
-    - name: install networkmanager, bonjour and macos network .local name recognition
-      pacman: name={{ item }} state=latest
-      with_items:
-        - avahi
-        - nss-mdns
-        - networkmanager
-        - ifplugd #to be able to detect and automount wired connections
-        #- wpa_actiond #to auto mount wireless connections with netctl
-        - wpa_supplicant
-      become: true
-
     - name: configure /etc/nssswitch.conf
       lineinfile:
         path: /etc/nsswitch.conf
@@ -103,48 +127,6 @@
         state: directory
         mode: 0755
       become: true
-
-    - name: Revert to traditional network device names
-      file:
-        src: /dev/null
-        path: /etc/udev/rules.d/80-net-setup-link.rules
-        state: link
-
-    - name: start && enable service dhcpcd@wlan0
-      service:
-        name: dhcpcd@wlan0
-        state: started
-        enabled: true
-      when: '"wlan0" in ansible_interfaces'
-
-    - name: start && enable service dhcpcd@eth0
-      service:
-        name: dhcpcd@eth0
-        state: started
-        enabled: true
-      when: '"eth0" in ansible_interfaces'
-
-    - name: start && enable service dhcpcd@eth1
-      service:
-        name: dhcpcd@eth1
-        state: started
-        enabled: true
-      when: '"eth1" in ansible_interfaces'
-    # - name: ensure netctl-ifplugd@eth0.service is enabled and started
-    #   systemd:
-    #     name: netctl-ifplugd@eth0.service
-    #     state: started
-    #     enabled: true
-    #   become: true
-    #   ignore_errors: true
-
-    # - name: ensure netctl-auto@wlan0.service is enabled and started
-    #   systemd:
-    #     name: netctl-auto@wlan0.service
-    #     state: started
-    #     enabled: true
-    #   become: true
-    #   ignore_errors: true
 
     - name: install samba and configure
       pacman: name={{ item }} state=latest
