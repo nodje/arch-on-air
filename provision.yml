@@ -21,6 +21,17 @@
         path: /etc/udev/rules.d/80-net-setup-link.rules
         state: link
 
+    - name: install networkmanager, bonjour and macos network .local name recognition
+      pacman: name={{ item }} state=latest
+      with_items:
+        - avahi
+        - nss-mdns
+        #- networkmanager
+        - ifplugd #to be able to detect and automount wired connections
+        #- wpa_actiond #to auto mount wireless connections with netctl
+        - wpa_supplicant
+      become: true
+
     - name: start enable network services
       include: tasks/enablestartservice.yml service={{ item }}
       with_items:
@@ -32,6 +43,7 @@
         name: dhcpcd@wlan0
         state: started
         enabled: true
+      become: true
       when: '"wlan0" in ansible_interfaces'
 
     - name: start && enable service dhcpcd@eth0
@@ -39,6 +51,7 @@
         name: dhcpcd@eth0
         state: started
         enabled: true
+      become: true
       when: '"eth0" in ansible_interfaces'
 
     - name: start && enable service dhcpcd@eth1
@@ -46,18 +59,8 @@
         name: dhcpcd@eth1
         state: started
         enabled: true
-      when: '"eth1" in ansible_interfaces'
-
-    - name: install networkmanager, bonjour and macos network .local name recognition
-      pacman: name={{ item }} state=latest
-      with_items:
-        - avahi
-        - nss-mdns
-        #- networkmanager
-        - ifplugd #to be able to detect and automount wired connections
-        #- wpa_actiond #to auto mount wireless connections with netctl
-        - wpa_supplicant
       become: true
+      when: '"eth1" in ansible_interfaces'
 
     - name: first upgrade the system
       pacman:
