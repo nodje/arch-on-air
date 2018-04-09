@@ -24,7 +24,7 @@
     - name: start enable network services
       include: tasks/enablestartservice.yml service={{ item }}
       with_items:
-        - wpa_supplicant@wlan0.conf
+        - wpa_supplicant@wlan0
         - systemd-networkd
 
     - name: start && enable service dhcpcd@wlan0
