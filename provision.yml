@@ -46,6 +46,7 @@
       become: true
       when: '"wlan0" in ansible_interfaces'
 
+#TODO: must only be enabled if eth0 is available
     - name: start && enable service dhcpcd@eth0
       service:
         name: dhcpcd@eth0
